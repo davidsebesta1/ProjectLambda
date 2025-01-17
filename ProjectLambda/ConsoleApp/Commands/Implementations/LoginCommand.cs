@@ -6,7 +6,7 @@ namespace ProjectLambda.ConsoleApp.Commands.Implementations
 {
     public class LoginCommand : ICommand
     {
-        public string Command => "login";
+        public string Command => "Login";
 
         public string Description => "Logins you as specified user with specified password";
 
@@ -21,7 +21,7 @@ namespace ProjectLambda.ConsoleApp.Commands.Implementations
             string username = args[0];
             string password = args[1];
 
-            foreach (User user in DataCacher<User>.Instance.GetAll().GetAwaiter().GetResult())
+            foreach (User user in DataRetriever<User>.Instance.GetAll().GetAwaiter().GetResult())
             {
                 if (user.Username != username)
                 {

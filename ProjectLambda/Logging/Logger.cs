@@ -62,11 +62,12 @@ namespace ProjectLambda.Logging
         }
 
         /// <summary>
-        /// Logs the string into log file.
+        /// Logs the string into output stream(s)-
         /// </summary>
         /// <param name="message">The message.</param>
         /// <param name="color">Color of the text.</param>
-        public static async Task Log(string message, ConsoleColor color = ConsoleColor.White)
+        /// <param name="consoleWrite">Whether the output should be written to console aswell.</param>
+        public static async Task Log(string message, ConsoleColor color = ConsoleColor.White, bool consoleWrite = true)
         {
             if (string.IsNullOrEmpty(message))
                 return;
@@ -85,7 +86,9 @@ namespace ProjectLambda.Logging
                 using (StreamWriter sw = File.AppendText(FilePath))
                 {
                     Console.ForegroundColor = color;
-                    Console.WriteLine(message);
+
+                    if (consoleWrite)
+                        Console.WriteLine(message);
                     sw.WriteLine(messageLog);
                 }
             }
@@ -100,7 +103,8 @@ namespace ProjectLambda.Logging
             if (exception == null)
                 return;
 
-            await Log(exception.Message + "\n" + exception.StackTrace, ConsoleColor.Red);
+            await Log(exception.Message, ConsoleColor.Red);
+            await Log(exception.StackTrace ?? "No stack trace", ConsoleColor.Red, false);
         }
     }
 }

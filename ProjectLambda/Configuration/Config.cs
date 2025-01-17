@@ -1,10 +1,4 @@
-﻿using ProjectLambda.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using YamlDotNet.Core;
+﻿using ProjectLambda.Database;
 
 namespace ProjectLambda.Configuration
 {
@@ -31,6 +25,11 @@ namespace ProjectLambda.Configuration
         /// <summary>
         /// Initial db to start with instead of having to run "USE dbName;".
         /// </summary>
-        public string InitialDatabase {  get; set; }
+        public string InitialDatabase { get; set; }
+
+        /// <summary>
+        /// Isolation level of transactions.
+        /// </summary>
+        public IsolationLevels IsolationLevel { get; set; } = IsolationLevels.REPEATABLE_READ;
     }
 }

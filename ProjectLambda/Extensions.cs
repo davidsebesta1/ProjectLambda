@@ -2,7 +2,6 @@
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace ProjectLambda
 {
@@ -54,6 +53,18 @@ namespace ProjectLambda
             if (i < sb.Length - 1)
                 sb.Length = i + 1;
 
+            return sb;
+        }
+
+        /// <summary>
+        /// Appends a obj's <see cref="object.ToString()"/> and new line.
+        /// </summary>
+        /// <param name="sb">This stringbuilder.</param>
+        /// <param name="obj">Target object to append.</param>
+        /// <returns>This stringbuilder.</returns>
+        public static StringBuilder AppendLine(this StringBuilder sb, object obj)
+        {
+            sb.AppendLine(obj.ToString());
             return sb;
         }
     }

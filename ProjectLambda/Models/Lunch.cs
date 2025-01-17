@@ -1,5 +1,4 @@
-﻿using Microsoft.VisualBasic;
-using MySql.Data.MySqlClient;
+﻿using MySql.Data.MySqlClient;
 using ProjectLambda.Database;
 using ProjectLambda.Models.Interfaces;
 using System.Data;
@@ -7,11 +6,21 @@ using System.Globalization;
 
 namespace ProjectLambda.Models
 {
+    /// <summary>
+    /// A class representing a single lunch.
+    /// </summary>
     public class Lunch : IDataAccessObject, IEquatable<Lunch?>
     {
+        /// <inheritdoc/>
         public static string SelectAllQuery => "SELECT * FROM Lunch;";
+
+        /// <inheritdoc/>
         public static string InsertQuery => @"UPDATE Lunch SET Soup_ID = @Soup_ID, MainMeal_ID = @MainMeal_ID, Dessert_ID = @Dessert_ID, Price = @Price, Date = @Date, MaxOrderTime = @MaxOrderTime WHERE ID = @ID;";
+
+        /// <inheritdoc/>
         public static string InsertQueryNoId => @"INSERT INTO Lunch (Soup_ID, MainMeal_ID, Dessert_ID, Price, Date, MaxOrderTime) VALUES (@Soup_ID, @MainMeal_ID, @Dessert_ID, @Price, @Date, @MaxOrderTime);";
+
+        /// <inheritdoc/>
         public static string DeleteQuery => "DELETE FROM Lunch WHERE ID = @ID;";
 
         /// <summary>
@@ -19,44 +28,79 @@ namespace ProjectLambda.Models
         /// </summary>
         public static string CsvRowHeader => "SoupName,MainCourseName,DessertName,Date,MaxOrderDate,Price";
 
+        /// <inheritdoc/>
         public int ID { get; set; }
 
+        /// <summary>
+        /// ID of referenced soup.
+        /// </summary>
         public int Soup_ID { get; set; }
 
-        public Meal Soup
+        /// <summary>
+        /// The referenced soup.
+        /// </summary>
+        public Meal ReferencedSoup
         {
             get
             {
-                return DataCacher<Meal>.Instance.GetFirstBy(m => m.ID == Soup_ID).GetAwaiter().GetResult();
+                return DataRetriever<Meal>.Instance.GetFirstBy(m => m.ID == Soup_ID).GetAwaiter().GetResult();
             }
         }
 
+        /// <summary>
+        /// ID of the referenced mail course.
+        /// </summary>
         public int MainMeal_ID { get; set; }
 
-        public Meal MainMeal
+        /// <summary>
+        /// The referenced main course.
+        /// </summary>
+        public Meal ReferencedMainCourse
         {
             get
             {
-                return DataCacher<Meal>.Instance.GetFirstBy(m => m.ID == MainMeal_ID).GetAwaiter().GetResult();
+                return DataRetriever<Meal>.Instance.GetFirstBy(m => m.ID == MainMeal_ID).GetAwaiter().GetResult();
             }
         }
 
+        /// <summary>
+        /// ID of referenced dessert.
+        /// </summary>
         public int Dessert_ID { get; set; }
 
-        public Meal Dessert
+        public Meal ReferencedDessert
         {
             get
             {
-                return DataCacher<Meal>.Instance.GetFirstBy(m => m.ID == Dessert_ID).GetAwaiter().GetResult();
+                return DataRetriever<Meal>.Instance.GetFirstBy(m => m.ID == Dessert_ID).GetAwaiter().GetResult();
             }
         }
 
+        /// <summary>
+        /// The price of the lunch.
+        /// </summary>
         public double Price { get; set; }
 
+        /// <summary>
+        /// The date of the lunch.
+        /// </summary>
         public DateTime Date { get; set; }
+
+        /// <summary>
+        /// The maximum time by which an order can be placed for the lunch.
+        /// </summary>
         public DateTime MaxOrderTime { get; set; }
 
-        // Constructor for a complete Lunch object
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Lunch"/> class with the specified details.
+        /// </summary>
+        /// <param name="id">The unique ID of the lunch.</param>
+        /// <param name="soupId">The ID of the soup.</param>
+        /// <param name="mainMealId">The ID of the main course.</param>
+        /// <param name="dessertId">The ID of the dessert.</param>
+        /// <param name="price">The price of the lunch.</param>
+        /// <param name="date">The date of the lunch.</param>
+        /// <param name="maxOrderTime">The maximum order time for the lunch.</param>
         public Lunch(int id, int soupId, int mainMealId, int dessertId, double price, DateTime date, DateTime maxOrderTime)
         {
             ID = id;
@@ -68,9 +112,16 @@ namespace ProjectLambda.Models
             MaxOrderTime = maxOrderTime;
         }
 
-        // Constructor for a new Lunch (without an ID yet)
-        public Lunch(int soupId, int mainMealId, int dessertId, double price, DateTime date, DateTime maxOrderTime)
-            : this(-1, soupId, mainMealId, dessertId, price, date, maxOrderTime)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Lunch"/> class with the specified details, with an automatic generation of ID.
+        /// </summary>
+        /// <param name="soupId">The ID of the soup.</param>
+        /// <param name="mainMealId">The ID of the main course.</param>
+        /// <param name="dessertId">The ID of the dessert.</param>
+        /// <param name="price">The price of the lunch.</param>
+        /// <param name="date">The date of the lunch.</param>
+        /// <param name="maxOrderTime">The maximum order time for the lunch.</param>
+        public Lunch(int soupId, int mainMealId, int dessertId, double price, DateTime date, DateTime maxOrderTime) : this(-1, soupId, mainMealId, dessertId, price, date, maxOrderTime)
         {
         }
 
@@ -106,21 +157,21 @@ namespace ProjectLambda.Models
                     return false;
 
 
-                Meal? soup = await DataCacher<Meal>.Instance.GetFirstBy(m => m.Name == soupName);
+                Meal? soup = await DataRetriever<Meal>.Instance.GetFirstBy(m => m.Name == soupName);
                 if (soup == null)
                 {
                     soup = new Meal(await GetMealTypeIdAsync("Soup"), soupName);
                     await soup.SaveAsync();
                 }
 
-                Meal? mainMeal = await DataCacher<Meal>.Instance.GetFirstBy(m => m.Name == mainCourseName);
+                Meal? mainMeal = await DataRetriever<Meal>.Instance.GetFirstBy(m => m.Name == mainCourseName);
                 if (mainMeal == null)
                 {
                     mainMeal = new Meal(await GetMealTypeIdAsync("MainCourse"), mainCourseName);
                     await mainMeal.SaveAsync();
                 }
 
-                Meal? dessert = await DataCacher<Meal>.Instance.GetFirstBy(m => m.Name == dessertName);
+                Meal? dessert = await DataRetriever<Meal>.Instance.GetFirstBy(m => m.Name == dessertName);
                 if (dessert == null)
                 {
                     dessert = new Meal(await GetMealTypeIdAsync("Dessert"), dessertName);
@@ -146,7 +197,7 @@ namespace ProjectLambda.Models
         /// </summary>
         private static async Task<int> GetMealTypeIdAsync(string mealTypeName)
         {
-            MealType? mealType = await DataCacher<MealType>.Instance.GetFirstBy(mt => mt.Name == mealTypeName);
+            MealType? mealType = await DataRetriever<MealType>.Instance.GetFirstBy(mt => mt.Name == mealTypeName);
             if (mealType == null)
             {
                 throw new InvalidOperationException($"Meal type '{mealTypeName}' not found.");
@@ -155,7 +206,7 @@ namespace ProjectLambda.Models
             return mealType.ID;
         }
 
-        // Load a Lunch object from a DataRow
+        /// <inheritdoc/>
         public static IDataAccessObject LoadFromRow(DataRow row)
         {
             return new Lunch(
@@ -169,7 +220,7 @@ namespace ProjectLambda.Models
             );
         }
 
-        // Save the Lunch object (Insert or Update)
+        /// <inheritdoc/>
         public async Task<int> SaveAsync()
         {
             try
@@ -201,7 +252,7 @@ namespace ProjectLambda.Models
             return -1; // Indicating failure to save
         }
 
-        // Delete the Lunch object
+        /// <inheritdoc/>
         public async Task<bool> DeleteAsync()
         {
             try
@@ -219,7 +270,7 @@ namespace ProjectLambda.Models
             return false;
         }
 
-        // Generate MySQL parameters for the queries
+        /// <inheritdoc/>
         private MySqlParameter[] GetMySqlParameters(bool includeID)
         {
             if (includeID)
@@ -247,17 +298,6 @@ namespace ProjectLambda.Models
             ];
         }
 
-        // Equality and HashCode implementations
-        public override bool Equals(object? obj)
-        {
-            return Equals(obj as Lunch);
-        }
-
-        public bool Equals(Lunch? other)
-        {
-            return other is not null && ID == other.ID;
-        }
-
         public override int GetHashCode()
         {
             return HashCode.Combine(ID, Soup_ID, MainMeal_ID, Dessert_ID, Price, Date, MaxOrderTime);
@@ -267,6 +307,26 @@ namespace ProjectLambda.Models
         {
             return $"Lunch: Soup_ID = {Soup_ID}, MainMeal_ID = {MainMeal_ID}, Dessert_ID = {Dessert_ID}, " +
                    $"Price = {Price:F2}, Date = {Date:yyyy-MM-dd}, MaxOrderTime = {MaxOrderTime:yyyy-MM-dd HH:mm:ss}";
+        }
+
+        public override bool Equals(object? obj)
+        {
+            return obj is Lunch order && Equals(order);
+        }
+
+        public bool Equals(Lunch? other)
+        {
+            return ID == other.ID;
+        }
+
+        public static bool operator ==(Lunch? left, Lunch? right)
+        {
+            return EqualityComparer<Lunch>.Default.Equals(left, right);
+        }
+
+        public static bool operator !=(Lunch? left, Lunch? right)
+        {
+            return !(left == right);
         }
     }
 }

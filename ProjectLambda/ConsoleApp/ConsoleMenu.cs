@@ -1,18 +1,19 @@
 ﻿using ProjectLambda.ConsoleApp.Commands;
 using ProjectLambda.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ProjectLambda.ConsoleApp
 {
+    /// <summary>
+    /// Class for showcase console menu.
+    /// </summary>
     public static class ConsoleMenu
     {
-        public static User LoggedInAs;
-        public static string Password;
+        public static User LoggedInAs { get; set; }
+        public static string Password { get; set; }
 
+        /// <summary>
+        /// Inits the console and runs the endless loop.
+        /// </summary>
         public static void Init()
         {
             CommandHandler.RegisterAllCommands();
@@ -35,6 +36,9 @@ namespace ProjectLambda.ConsoleApp
             }
         }
 
+        /// <summary>
+        /// Prints all commands.
+        /// </summary>
         public static void PrintAllCommands()
         {
             foreach (var commandEntry in CommandHandler.RegisteredCommands)

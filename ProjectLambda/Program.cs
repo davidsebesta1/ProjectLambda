@@ -24,7 +24,6 @@ namespace ProjectLambda
             await Logger.Log("Done!");
 
             ConsoleMenu.Init();
-
         }
 
         /// <summary>

@@ -1,19 +1,28 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using ProjectLambda.ConsoleApp.Commands.Interfaces;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using ProjectLambda.ConsoleApp.Commands.Interfaces;
 
 namespace ProjectLambda.ConsoleApp.Commands
 {
+    /// <summary>
+    /// A static class for registering and executing commands.
+    /// </summary>
     public static class CommandHandler
     {
+        /// <summary>
+        /// All registered commands.
+        /// </summary>
         public static Dictionary<string, ICommand> RegisteredCommands = new Dictionary<string, ICommand>();
 
+        /// <summary>
+        /// Attempts to execute a command.
+        /// </summary>
+        /// <param name="commandName">Target command name.</param>
+        /// <param name="args">Arguments.</param>
+        /// <param name="response">Response from the command.</param>
+        /// <returns>Whether the command has successfully executed.</returns>
         public static bool TryExecuteCommand(string commandName, ArraySegment<string> args, out string response)
         {
+            commandName = commandName.ToLower();
             if (RegisteredCommands == null)
             {
                 response = "Command not found";
@@ -22,13 +31,26 @@ namespace ProjectLambda.ConsoleApp.Commands
 
             if (RegisteredCommands.TryGetValue(commandName, out ICommand command))
             {
-                return command.Execute(args, out response);
+                try
+                {
+                    return command.Execute(args, out response);
+
+                }
+                catch (Exception ex)
+                {
+                    response = ex.Message;
+                    Logging.Logger.LogError(ex);
+                    return false;
+                }
             }
 
             response = "Command not found";
             return false;
         }
-
+        
+        /// <summary>
+        /// Registers all commands from executing assembly.s
+        /// </summary>
         public static void RegisterAllCommands()
         {
             foreach (Type type in Assembly.GetExecutingAssembly().GetTypes())
@@ -40,6 +62,16 @@ namespace ProjectLambda.ConsoleApp.Commands
             }
         }
 
+        /// <summary>
+        /// Attempts to register a command.
+        /// </summary>
+        /// <typeparam name="T">Target command type.</typeparam>
+        /// <returns>Whether it was successfully registered.</returns>
+        public static bool TryRegisterCommand<T>() where T : ICommand
+        {
+            return TryRegisterCommand(typeof(T));
+        }
+
         private static bool TryRegisterCommand(Type type)
         {
             if (Activator.CreateInstance(type) is not ICommand command)
@@ -47,13 +79,8 @@ namespace ProjectLambda.ConsoleApp.Commands
                 return false;
             }
 
-            RegisteredCommands.Add(command.Command, command);
+            RegisteredCommands.Add(command.Command.ToLower(), command);
             return true;
-        }
-
-        public static bool TryRegisterCommand<T>() where T : ICommand
-        {
-            return TryRegisterCommand(typeof(T));
         }
     }
 }

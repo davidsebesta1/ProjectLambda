@@ -5,7 +5,7 @@ namespace ProjectLambda.ConsoleApp.Commands.Implementations
 {
     public class ImportCsvCommand : ICommand
     {
-        public string Command => "importCsv";
+        public string Command => "ImportCsv";
 
         public string Description => "Imports a specified csv file as lunches. Creates new if it doesn't exists.";
 

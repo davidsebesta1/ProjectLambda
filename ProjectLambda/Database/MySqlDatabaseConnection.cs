@@ -10,9 +10,11 @@ namespace ProjectLambda.Database
     /// </summary>
     public class MySqlDatabaseConnection
     {
-        private readonly string _connectionString;
+        public string ConnectionString { get; private set; }
 
         private static MySqlDatabaseConnection _instance;
+
+        public static string IsolationLevelSetQuery => "SET TRANSACTION ISOLATION LEVEL ";
 
         /// <summary>
         /// Gets the singleton instance. Initializes a new if it isn't already.
@@ -33,7 +35,7 @@ namespace ProjectLambda.Database
 
         private MySqlDatabaseConnection(string ip, string databaseName, string UID, string pw)
         {
-            _connectionString = $"server='{ip}';database='{databaseName}';user='{UID}';password='{pw}';Allow User Variables=true;";
+            ConnectionString = $"server='{ip}';database='{databaseName}';user='{UID}';password='{pw}';Allow User Variables=true;";
         }
 
         private static async void InitializeSetup()
@@ -66,11 +68,11 @@ namespace ProjectLambda.Database
 
             try
             {
-                using (MySqlConnection connection = new MySqlConnection(_connectionString))
+                await using (MySqlConnection connection = new MySqlConnection(ConnectionString))
                 {
                     await connection.OpenAsync();
 
-                    using (MySqlCommand command = new MySqlCommand(query, connection))
+                    await using (MySqlCommand command = new MySqlCommand(query, connection))
                     {
                         if (parameters != null)
                         {
@@ -103,11 +105,11 @@ namespace ProjectLambda.Database
 
             try
             {
-                using (MySqlConnection connection = new MySqlConnection(_connectionString))
+                await using (MySqlConnection connection = new MySqlConnection(ConnectionString))
                 {
                     await connection.OpenAsync();
 
-                    using (MySqlCommand command = new MySqlCommand(query, connection))
+                    await using (MySqlCommand command = new MySqlCommand(query, connection))
                     {
                         if (parameters != null)
                         {
@@ -144,11 +146,11 @@ namespace ProjectLambda.Database
 
             try
             {
-                using (MySqlConnection connection = new MySqlConnection(_connectionString))
+                await using (MySqlConnection connection = new MySqlConnection(ConnectionString))
                 {
                     await connection.OpenAsync();
 
-                    using (MySqlCommand command = new MySqlCommand(query, connection))
+                    await using (MySqlCommand command = new MySqlCommand(query, connection))
                     {
                         if (parameters != null)
                         {
@@ -174,26 +176,123 @@ namespace ProjectLambda.Database
             return 0;
         }
 
+        /// <summary>
+        /// Executes the query that returns a decimal value.
+        /// </summary>
+        /// <param name="query">The SQL query.</param>
+        /// <param name="parameters">Parameters of the query.</param>
+        /// <returns>Result from the RDBMS as a decimal.</returns>
+        public async Task<decimal> ExecuteScalarDecimalAsync(string query, params MySqlParameter[] parameters)
+        {
+            await Console.Out.WriteLineAsync(query);
+            if (string.IsNullOrEmpty(query))
+                return 0;
+
+            try
+            {
+                await using (MySqlConnection connection = new MySqlConnection(ConnectionString))
+                {
+                    await connection.OpenAsync();
+
+                    await using (MySqlCommand command = new MySqlCommand(query, connection))
+                    {
+                        if (parameters != null)
+                        {
+                            command.Parameters.AddRange(parameters);
+                        }
+
+                        object? result = await command.ExecuteScalarAsync();
+
+                        if (result != null && decimal.TryParse(result.ToString(), out decimal decimalValue))
+                        {
+                            return decimalValue;
+                        }
+
+                        return 0;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                await Logger.LogError(ex);
+            }
+
+            return 0;
+        }
 
         /// <summary>
         /// Executes the transaction multiple queries.
         /// </summary>
         /// <param name="queries">Query and its params.</param>
+        /// <param name="level">Transaction isolation level to be applied.</param>
         /// <returns>Whether the transaction has been commited or rollback.</returns>
-        public async Task<bool> ExecuteTransactionAsync(List<(string, MySqlParameter[])> queries)
+        public async Task<bool> ExecuteTransactionAsync(List<(string, MySqlParameter[])> queries, MySqlTransaction transaction)
+        {
+            MySqlConnection connection = null;
+            if (transaction != null)
+            {
+                connection = transaction.Connection;
+            }
+
+            connection ??= new MySqlConnection(ConnectionString);
+
+            try
+            {
+                foreach (var kvp in queries)
+                {
+                    await using (MySqlCommand command = new MySqlCommand(kvp.Item1, connection))
+                    {
+                        if (kvp.Item2 != null)
+                        {
+                            command.Parameters.AddRange(kvp.Item2);
+                        };
+
+                        await command.ExecuteNonQueryAsync();
+                    }
+                }
+
+                return true;
+
+            }
+            catch (Exception ex)
+            {
+                await Logger.LogError(ex);
+                await transaction.RollbackAsync();
+            }
+
+
+            await transaction.DisposeAsync();
+
+            return false;
+        }
+
+
+
+        /// <summary>
+        /// Executes the transaction multiple queries.
+        /// </summary>
+        /// <param name="queries">Query and its params.</param>
+        /// <param name="level">Transaction isolation level to be applied.</param>
+        /// <returns>Whether the transaction has been commited or rollback.</returns>
+        public async Task<bool> ExecuteTransactionAsync(List<(string, MySqlParameter[])> queries, IsolationLevels level = IsolationLevels.REPEATABLE_READ)
         {
             MySqlTransaction transaction = null;
-            using (MySqlConnection connection = new MySqlConnection(_connectionString))
+            using (MySqlConnection connection = new MySqlConnection(ConnectionString))
             {
                 try
                 {
                     await connection.OpenAsync();
 
+                    await using (MySqlCommand command = new MySqlCommand(IsolationLevelSetQuery + level.ToString().Replace('_', ' '), connection))
+                    {
+                        await command.ExecuteNonQueryAsync();
+                    }
+
                     transaction = connection.BeginTransaction();
 
                     foreach (var kvp in queries)
                     {
-                        using (MySqlCommand command = new MySqlCommand(kvp.Item1, connection))
+                        await using (MySqlCommand command = new MySqlCommand(kvp.Item1, connection))
                         {
                             if (kvp.Item2 != null)
                             {
