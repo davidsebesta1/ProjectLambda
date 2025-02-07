@@ -1,8 +1,6 @@
 # Project Lambda
 
 ## Autor David Šebesta
-### SPŠE Ječná
-Project Lambda is a school project created to showcase work with database in C# and to show an example of non-repeatable read in databases transactions.
 
 ## Setup
 In folder /data you can find a database export with basic login information "admin", "admin" (username, password) for the application interface to check out. There is also test data for January and Februrary of year 2025.<br>
